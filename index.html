@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resilience Echoes - Create Post</title> <!-- Updated Title -->
+    <style>
+        /* Reset and Base Styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f4f7f6; /* Light background */
+            color: #333;
+            padding: 20px;
+        }
+
+        /* Container */
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+
+        /* Form Styling */
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.2s ease-in-out;
+        }
+
+        input[type="text"]:focus,
+        input[type="date"]:focus,
+        textarea:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        /* Buttons */
+        button {
+            display: inline-block; /* Allow margin */
+            padding: 12px 25px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: background-color 0.2s ease-in-out;
+            margin-right: 10px; /* Space between buttons */
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Suggestion Areas */
+        #aiStorySuggestions {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            font-style: italic;
+            color: #495057;
+            min-height: 40px; /* Ensure space even when empty */
+        }
+
+        #aiImageSuggestions {
+            min-height: 150px; /* Increased height */
+            border: 2px dashed #007bff; /* More prominent border */
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        #aiImageSuggestions img {
+            max-width: 100%;
+            max-height: 250px; /* Allow larger preview */
+            border-radius: 4px;
+        }
+
+        #aiImageSuggestions i {
+             color: #6c757d;
+        }
+
+        /* Form Group */
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        /* File Input - Basic Styling */
+        input[type="file"] {
+            display: block;
+            margin-top: 5px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+
+        /* Logout Button */
+        .logout-button {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            padding: 8px 15px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.2s ease;
+        }
+
+        .logout-button:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+
+    <button id="logoutButton" class="logout-button">Logout</button>
+
+    <div class="container"> <!-- Added Container -->
+        <h1>Create New Archive Post</h1>
+
+        <form id="archiveForm">
+            <div class="form-group">
+                <label for="title">Title:</label>
+                <input type="text" id="title" name="title" required>
+            </div>
+
+            <div class="form-group">
+                <label for="datePublished">Date Published:</label>
+                <input type="date" id="datePublished" name="datePublished" required>
+            </div>
+
+            <div class="form-group">
+                <label for="timeline">Timeline of Event:</label>
+                <input type="text" id="timeline" name="timeline" placeholder="e.g., Key dates or period">
+            </div>
+
+            <div class="form-group">
+                <label for="story">Story:</label>
+                <textarea id="story" name="story" required></textarea>
+                <!-- Placeholder for AI suggestions -->
+                <div id="aiStorySuggestions"><i>Suggestions will appear here as you type...</i></div>
+                <!-- Add button for image suggestions -->
+                <button type="button" id="suggestImageBtn" style="margin-top: 15px;">Suggest Image Based on Story</button>
+            </div>
+
+            <div class="form-group">
+                <label for="imageSuggestions">Image Suggestion:</label>
+                <!-- Placeholder for AI image suggestions -->
+                <div id="aiImageSuggestions">
+                    <i>Click "Suggest Image" after writing the story.</i>
+                </div>
+                <label for="imageUpload" style="margin-top: 15px;">Upload Chosen Image:</label>
+                <input type="file" id="imageUpload" name="imageUpload" accept="image/*">
+            </div>
+
+            <div class="form-group">
+                <label for="workCited">Work Cited (Optional):</label>
+                <textarea id="workCited" name="workCited"></textarea>
+            </div>
+
+            <button type="submit">Submit Post</button>
+        </form>
+    </div> <!-- Close Container -->
+
+    <script>
+        const apiBaseUrl = 'http://localhost:5252'; // Your backend API URL
+        const form = document.getElementById('archiveForm');
+        const storyTextArea = document.getElementById('story');
+        const aiStorySuggestionsDiv = document.getElementById('aiStorySuggestions');
+        const aiImageSuggestionsDiv = document.getElementById('aiImageSuggestions');
+        const imageUploadInput = document.getElementById('imageUpload');
+        const suggestImageBtn = document.getElementById('suggestImageBtn'); // Added
+        const logoutButton = document.getElementById('logoutButton');
+
+        // *** Updated suggestion text placeholders ***
+        const initialStorySuggestionText = '<i>Suggestions will appear here as you type...</i>';
+        const initialImageSuggestionText = '<i>Click "Suggest Image" after writing the story.</i>';
+
+        // Initialize suggestion divs
+        aiStorySuggestionsDiv.innerHTML = initialStorySuggestionText;
+        aiImageSuggestionsDiv.innerHTML = initialImageSuggestionText;
+
+        // --- Authentication Check --- 
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) {
+            window.location.href = 'login.html'; // Redirect to login if no token
+        }
+        // --------------------------
+
+        // --- Logout Functionality ---
+        logoutButton.addEventListener('click', () => {
+            localStorage.removeItem('authToken'); // Remove the token
+            window.location.href = 'login.html'; // Redirect to login
+        });
+        // ---------------------------
+
+        // Function to make authenticated API requests
+        async function fetchWithAuth(url, options = {}) {
+            const headers = {
+                ...options.headers,
+                'Authorization': `Bearer ${authToken}` // Add the token to the header
+            };
+            
+            const response = await fetch(url, { ...options, headers });
+
+            if (response.status === 401) { // Unauthorized
+                localStorage.removeItem('authToken');
+                window.location.href = 'login.html'; // Redirect if token is invalid/expired
+                throw new Error('Unauthorized');
+            }
+            
+            return response;
+        }
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Prevent default browser form submission
+
+            // Create FormData directly from the form element
+            // This will include all fields, including the file input
+            const formData = new FormData(form);
+
+            // Log the FormData entries (for debugging)
+            console.log('Submitting FormData:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`${key}:`, value);
+            }
+
+            try {
+                const response = await fetchWithAuth(`${apiBaseUrl}/api/posts`, {
+                    method: 'POST',
+                    body: formData // Send the FormData object directly
+                });
+
+                if (response.ok) {
+                    const createdPost = await response.json();
+                    console.log('Post created successfully:', createdPost);
+                    alert('Post submitted successfully!');
+                    form.reset(); // Clear the form
+                    aiStorySuggestionsDiv.innerHTML = initialStorySuggestionText; // Reset suggestions
+                    aiImageSuggestionsDiv.innerHTML = initialImageSuggestionText; // Reset suggestions
+                } else {
+                    const errorData = await response.text(); // Or response.json() if backend sends structured errors
+                    console.error('Failed to submit post:', response.status, errorData);
+                    alert(`Error submitting post: ${response.status} - ${errorData}`);
+                }
+            } catch (error) {
+                console.error('Network error or other issue:', error);
+                alert('An error occurred while submitting the post. Check the console.');
+            }
+        });
+
+        // Debounce function to limit API calls
+        let debounceTimer;
+        function debounce(func, delay) {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(func, delay);
+        }
+
+        // Function to fetch and display story suggestions
+        async function fetchStorySuggestion() {
+            const currentText = storyTextArea.value;
+            if (currentText.length < 20) {
+                aiStorySuggestionsDiv.innerHTML = initialStorySuggestionText;
+                return;
+            }
+
+            aiStorySuggestionsDiv.innerHTML = '<i>Getting suggestion...</i>'; // Indicate loading
+
+            try {
+                const response = await fetchWithAuth(`${apiBaseUrl}/api/posts/suggest-story`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ currentText: currentText })
+                });
+
+                if (response.ok) {
+                    const suggestion = await response.text(); // Expecting plain text suggestion
+                    aiStorySuggestionsDiv.innerHTML = `Suggestion: <i>${suggestion}</i>`;
+                    // TODO: Add button or mechanism to accept the suggestion
+                } else {
+                    console.error('Failed to get story suggestion:', response.status);
+                    aiStorySuggestionsDiv.innerHTML = '<i>Could not get suggestion.</i>';
+                }
+            } catch (error) {
+                console.error('Error fetching story suggestion:', error);
+                aiStorySuggestionsDiv.innerHTML = '<i>Error getting suggestion.</i>';
+            }
+        }
+
+        // Add event listener for storyTextArea input with debounce
+        storyTextArea.addEventListener('input', () => {
+            debounce(fetchStorySuggestion, 1500); // Wait 1.5 seconds after user stops typing
+        });
+
+        // Function to fetch and display image suggestions
+        async function fetchImageSuggestion() {
+            const currentText = storyTextArea.value;
+            if (currentText.length < 30) {
+                aiImageSuggestionsDiv.innerHTML = '<i>Please write more of the story (at least 30 characters) to get an image suggestion.</i>';
+                return;
+            }
+
+            aiImageSuggestionsDiv.innerHTML = '<i>Generating image suggestion... (this may take a moment)</i>';
+            suggestImageBtn.disabled = true; // Disable button while generating
+
+            try {
+                const response = await fetchWithAuth(`${apiBaseUrl}/api/posts/suggest-images`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ currentText: currentText })
+                });
+
+                if (response.ok) {
+                    const imageUrl = await response.text(); // Expecting plain text URL
+                    // Display the image
+                    aiImageSuggestionsDiv.innerHTML = `<img src="${imageUrl}" alt="AI Suggested Image" style="max-width: 100%; max-height: 250px;">`;
+                    // TODO: Add mechanism to use this image (e.g., copy URL, download & select)
+                } else {
+                    console.error('Failed to get image suggestion:', response.status);
+                    aiImageSuggestionsDiv.innerHTML = '<i>Could not generate image suggestion.</i>';
+                }
+            } catch (error) {
+                console.error('Error fetching image suggestion:', error);
+                aiImageSuggestionsDiv.innerHTML = '<i>Error generating image suggestion.</i>';
+            } finally {
+                suggestImageBtn.disabled = false; // Re-enable button
+            }
+        }
+
+        // Add event listener for the suggest image button
+        suggestImageBtn.addEventListener('click', fetchImageSuggestion);
+
+        // TODO: Add logic to handle selection of suggested images or upload
+
+    </script>
+
+</body>
+</html>
