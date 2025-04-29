@@ -2,11 +2,7 @@ using BackendApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Builder;
 using BackendApi.Services;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using Microsoft.Extensions.DependencyInjection;
-using System.Threading.Tasks;
 using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -67,62 +63,11 @@ else
     builder.Services.AddSingleton<BlobStorageService>();
     builder.Services.AddSingleton<OpenAiService>();
 }
-
-// Always register AuthService as Scoped
-builder.Services.AddScoped<AuthService>();
 // ***********************************
-
-// *** Configure JWT Authentication ***
-var jwtSettings = builder.Configuration.GetSection("Jwt");
-var key = Encoding.ASCII.GetBytes(jwtSettings["Key"] ?? "DEVELOPMENT_TEMPORARY_KEY_ONLY_FOR_LOCAL_USE");
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
-    options.SaveToken = true;
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(key),
-        ValidateIssuer = !builder.Environment.IsDevelopment(),
-        ValidIssuer = jwtSettings["Issuer"] ?? "http://localhost",
-        ValidateAudience = !builder.Environment.IsDevelopment(),
-        ValidAudience = jwtSettings["Audience"] ?? "http://localhost",
-        ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero
-    };
-});
-// *********************************
-
-// *** Add Authorization Services ***
-builder.Services.AddAuthorization();
-// ********************************
 
 builder.Services.AddControllers();
 
 var app = builder.Build();
-
-// *** Initialize Default User ***
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    try
-    {
-        var authService = services.GetRequiredService<AuthService>();
-        await authService.InitializeDefaultUserAsync();
-        Console.WriteLine("Default user initialization checked/completed.");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"An error occurred during default user initialization: {ex.Message}");
-    }
-}
-// ******************************
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -157,11 +102,6 @@ if (app.Environment.IsDevelopment())
     Console.WriteLine($"Serving local files from: {uploadPath}");
 }
 // *******************************************************
-
-// *** Enable Authentication and Authorization ***
-app.UseAuthentication();
-app.UseAuthorization();
-// *********************************************
 
 app.MapControllers();
 

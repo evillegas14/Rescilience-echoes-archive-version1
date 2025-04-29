@@ -144,4 +144,4 @@ C:\Users\evill\OneDrive - UNT System\Documents\GitHub\Rescilience-echoes-archive
 C:\Users\evill\OneDrive - UNT System\Documents\GitHub\Rescilience-echoes-archive-version1\BackendApi\obj\Debug\net8.0\BackendApi.pdb
 C:\Users\evill\OneDrive - UNT System\Documents\GitHub\Rescilience-echoes-archive-version1\BackendApi\obj\Debug\net8.0\BackendApi.genruntimeconfig.cache
 C:\Users\evill\OneDrive - UNT System\Documents\GitHub\Rescilience-echoes-archive-version1\BackendApi\obj\Debug\net8.0\ref\BackendApi.dll
-C:\Users\evill\OneDrive - UNT System\Documents\GitHub\Rescilience-echoes-archive-version1\BackendApi\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Users\evill\OneDrive - UNT System\Documents\GitHub\Rescilience-echoes-archive-version1\BackendApi\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.InMemory.dll

@@ -140,30 +140,9 @@
             border-radius: 4px;
             background-color: #f8f9fa;
         }
-
-        /* Logout Button */
-        .logout-button {
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            padding: 8px 15px;
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: background-color 0.2s ease;
-        }
-
-        .logout-button:hover {
-            background-color: #c82333;
-        }
     </style>
 </head>
 <body>
-
-    <button id="logoutButton" class="logout-button">Logout</button>
 
     <div class="container"> <!-- Added Container -->
         <h1>Create New Archive Post</h1>
@@ -213,14 +192,14 @@
     </div> <!-- Close Container -->
 
     <script>
-        const apiBaseUrl = 'http://localhost:5252'; // Your backend API URL
+        // Use relative URL instead of hardcoded localhost URL
+        const apiBaseUrl = '';
         const form = document.getElementById('archiveForm');
         const storyTextArea = document.getElementById('story');
         const aiStorySuggestionsDiv = document.getElementById('aiStorySuggestions');
         const aiImageSuggestionsDiv = document.getElementById('aiImageSuggestions');
         const imageUploadInput = document.getElementById('imageUpload');
-        const suggestImageBtn = document.getElementById('suggestImageBtn'); // Added
-        const logoutButton = document.getElementById('logoutButton');
+        const suggestImageBtn = document.getElementById('suggestImageBtn');
 
         // *** Updated suggestion text placeholders ***
         const initialStorySuggestionText = '<i>Suggestions will appear here as you type...</i>';
@@ -230,35 +209,9 @@
         aiStorySuggestionsDiv.innerHTML = initialStorySuggestionText;
         aiImageSuggestionsDiv.innerHTML = initialImageSuggestionText;
 
-        // --- Authentication Check --- 
-        const authToken = localStorage.getItem('authToken');
-        if (!authToken) {
-            window.location.href = 'login.html'; // Redirect to login if no token
-        }
-        // --------------------------
-
-        // --- Logout Functionality ---
-        logoutButton.addEventListener('click', () => {
-            localStorage.removeItem('authToken'); // Remove the token
-            window.location.href = 'login.html'; // Redirect to login
-        });
-        // ---------------------------
-
-        // Function to make authenticated API requests
-        async function fetchWithAuth(url, options = {}) {
-            const headers = {
-                ...options.headers,
-                'Authorization': `Bearer ${authToken}` // Add the token to the header
-            };
-            
-            const response = await fetch(url, { ...options, headers });
-
-            if (response.status === 401) { // Unauthorized
-                localStorage.removeItem('authToken');
-                window.location.href = 'login.html'; // Redirect if token is invalid/expired
-                throw new Error('Unauthorized');
-            }
-            
+        // Function to make API requests
+        async function fetchApiEndpoint(url, options = {}) {
+            const response = await fetch(url, options);
             return response;
         }
 
@@ -276,7 +229,7 @@
             }
 
             try {
-                const response = await fetchWithAuth(`${apiBaseUrl}/api/posts`, {
+                const response = await fetchApiEndpoint(`${apiBaseUrl}/api/posts`, {
                     method: 'POST',
                     body: formData // Send the FormData object directly
                 });
@@ -317,7 +270,7 @@
             aiStorySuggestionsDiv.innerHTML = '<i>Getting suggestion...</i>'; // Indicate loading
 
             try {
-                const response = await fetchWithAuth(`${apiBaseUrl}/api/posts/suggest-story`, {
+                const response = await fetchApiEndpoint(`${apiBaseUrl}/api/posts/suggest-story`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -356,7 +309,7 @@
             suggestImageBtn.disabled = true; // Disable button while generating
 
             try {
-                const response = await fetchWithAuth(`${apiBaseUrl}/api/posts/suggest-images`, {
+                const response = await fetchApiEndpoint(`${apiBaseUrl}/api/posts/suggest-images`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

@@ -13,7 +13,6 @@ namespace BackendApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize] // Secure the entire controller
     public class PostsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;

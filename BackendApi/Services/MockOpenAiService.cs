@@ -17,7 +17,7 @@ namespace BackendApi.Services
             _logger.LogInformation("Using Mock OpenAI Service for local development");
         }
 
-        public override async Task<string> GetStorySuggestionAsync(string currentText)
+        public override async Task<string?> GetStorySuggestionAsync(string currentText)
         {
             _logger.LogInformation("Mock OpenAI Service generating story suggestion");
             
@@ -37,7 +37,7 @@ namespace BackendApi.Services
             return suggestions[_random.Next(suggestions.Length)];
         }
 
-        public override async Task<Uri> GenerateImageAsync(string prompt)
+        public override async Task<Uri?> GenerateImageAsync(string prompt)
         {
             _logger.LogInformation("Mock OpenAI Service generating image for prompt: {Prompt}", prompt);
             

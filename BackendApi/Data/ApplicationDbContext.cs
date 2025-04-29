@@ -12,8 +12,7 @@ namespace BackendApi.Data
 
         // Represents the Posts table in the database
         public DbSet<Post> Posts { get; set; }
-
-        // Represents the Users table in the database
-        public DbSet<User> Users { get; set; }
+        
+        // Removed the Users DbSet since authentication has been removed from the application
     }
 }

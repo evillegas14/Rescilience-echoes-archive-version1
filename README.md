@@ -8,8 +8,6 @@ This project is a web application for creating and managing historical archive p
 *   Upload images associated with posts.
 *   Get AI-driven story suggestions based on the current text.
 *   Get AI-generated image suggestions based on the story.
-*   Secure API endpoints using JWT authentication.
-*   Basic login functionality.
 
 ## Prerequisites
 
@@ -37,7 +35,6 @@ The application now supports a local development mode that doesn't require Azure
 
 3.  **Run the Frontend:**
     *   Simply open the `index.html` file in your web browser.
-    *   You will be redirected to `login.html`.
 
 ## Production Setup
 
@@ -47,21 +44,11 @@ For a production deployment, you'll need to configure Azure services:
     *   **ConnectionStrings**: Update `DefaultConnection` with your database connection string.
     *   **BlobStorage**: Provide your Azure Blob Storage `AccountName` and `ContainerName`.
     *   **AzureOpenAI**: Set your Azure OpenAI `Endpoint`, `DeploymentName` (for text generation, e.g., gpt-4o-mini), and `DalleDeploymentName` (for image generation, e.g., dall-e-3).
-    *   **Jwt**: 
-        *   **Key**: **IMPORTANT:** Replace `"YOUR_SUPER_SECRET_KEY_REPLACE_THIS_IN_PRODUCTION"` with a strong, unique secret key. For production, store this securely (e.g., Azure Key Vault, environment variables), not directly in `appsettings.json`.
-        *   **Issuer/Audience**: Replace `"https://yourdomain.com"` with appropriate URIs for your application if deploying.
 
 2.  **Database Migrations:**
     *   Open a terminal in the root directory.
     *   Navigate to the BackendApi project: `cd BackendApi`
     *   Apply migrations: `dotnet ef database update`
-
-## Logging In
-
-*   **Username:** `Microsoft HackathonSDKOpenAI`
-*   **Password:** `QWERT12341234`
-
-    Enter these credentials on the `login.html` page to access the main application (`index.html`).
 
 ## Usage
 
@@ -75,14 +62,12 @@ For a production deployment, you'll need to configure Azure services:
 ## Project Structure
 
 *   `index.html`: Main frontend page for creating posts.
-*   `login.html`: Frontend page for user login.
 *   `BackendApi/`: Contains the ASP.NET Core backend project.
-    *   `Controllers/`: API endpoints (Posts, Auth).
+    *   `Controllers/`: API endpoints (Posts).
     *   `Data/`: Database context (`ApplicationDbContext`).
     *   `Migrations/`: Entity Framework Core database migrations.
-    *   `Models/`: Data models (Post, User).
+    *   `Models/`: Data models (Post).
     *   `Services/`: Business logic services:
-        *   `AuthService.cs`: Handles authentication logic.
         *   `BlobStorageService.cs`: Azure Blob Storage implementation.
         *   `LocalFileStorageService.cs`: Local file storage implementation for development.
         *   `OpenAiService.cs`: Azure OpenAI service implementation.

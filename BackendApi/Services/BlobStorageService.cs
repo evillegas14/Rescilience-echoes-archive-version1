@@ -10,8 +10,8 @@ namespace BackendApi.Services
 {
     public class BlobStorageService
     {
-        private readonly BlobServiceClient _blobServiceClient;
-        private readonly string _containerName;
+        private readonly BlobServiceClient? _blobServiceClient;
+        private readonly string? _containerName;
 
         public BlobStorageService(IConfiguration configuration)
         {
@@ -49,6 +49,11 @@ namespace BackendApi.Services
             if (_blobServiceClient == null)
             {
                 throw new InvalidOperationException("BlobServiceClient is not initialized. Cannot upload file to Azure.");
+            }
+
+            if (_containerName == null)
+            {
+                throw new InvalidOperationException("ContainerName is not initialized.");
             }
 
             var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);

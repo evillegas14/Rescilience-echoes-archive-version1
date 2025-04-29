@@ -10,9 +10,9 @@ namespace BackendApi.Services
 {
     public class OpenAiService
     {
-        private readonly OpenAIClient _client;
-        private readonly string _textDeploymentName;
-        private readonly string _dalleDeploymentName;
+        private readonly OpenAIClient? _client;
+        private readonly string? _textDeploymentName;
+        private readonly string? _dalleDeploymentName;
 
         public OpenAiService(IConfiguration configuration)
         {
@@ -35,6 +35,11 @@ namespace BackendApi.Services
             if (_client == null)
             {
                 throw new InvalidOperationException("OpenAIClient is not initialized. Cannot generate story suggestion.");
+            }
+
+            if (_textDeploymentName == null)
+            {
+                throw new InvalidOperationException("TextDeploymentName is not initialized.");
             }
 
             if (string.IsNullOrWhiteSpace(currentStoryText))
@@ -73,6 +78,11 @@ namespace BackendApi.Services
             if (_client == null)
             {
                 throw new InvalidOperationException("OpenAIClient is not initialized. Cannot generate image.");
+            }
+
+            if (_dalleDeploymentName == null)
+            {
+                throw new InvalidOperationException("DalleDeploymentName is not initialized.");
             }
 
             if (string.IsNullOrWhiteSpace(prompt))
