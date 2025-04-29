@@ -140,12 +140,40 @@
             border-radius: 4px;
             background-color: #f8f9fa;
         }
+
+        /* Status Messages */
+        .status-message {
+            padding: 10px 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
     </style>
 </head>
 <body>
 
     <div class="container"> <!-- Added Container -->
         <h1>Create New Archive Post</h1>
+        
+        <div id="statusMessage" class="status-message"></div>
 
         <form id="archiveForm">
             <div class="form-group">
@@ -192,14 +220,19 @@
     </div> <!-- Close Container -->
 
     <script>
-        // Use relative URL instead of hardcoded localhost URL
-        const apiBaseUrl = '';
+        // API configuration with dynamic base URL detection
+        const apiBaseUrl = location.protocol === 'file:' 
+            ? 'http://localhost:5252'  // When running from file system
+            : location.origin;         // When hosted on same origin as backend
+        
+        // DOM elements
         const form = document.getElementById('archiveForm');
         const storyTextArea = document.getElementById('story');
         const aiStorySuggestionsDiv = document.getElementById('aiStorySuggestions');
         const aiImageSuggestionsDiv = document.getElementById('aiImageSuggestions');
         const imageUploadInput = document.getElementById('imageUpload');
         const suggestImageBtn = document.getElementById('suggestImageBtn');
+        const statusMessageDiv = document.getElementById('statusMessage');
 
         // *** Updated suggestion text placeholders ***
         const initialStorySuggestionText = '<i>Suggestions will appear here as you type...</i>';
@@ -209,46 +242,102 @@
         aiStorySuggestionsDiv.innerHTML = initialStorySuggestionText;
         aiImageSuggestionsDiv.innerHTML = initialImageSuggestionText;
 
-        // Function to make API requests
+        // Check if API is available
+        checkApiAvailability();
+
+        // Function to show status messages
+        function showStatusMessage(message, type) {
+            statusMessageDiv.textContent = message;
+            statusMessageDiv.className = "status-message";
+            
+            if (type === 'success') {
+                statusMessageDiv.classList.add('status-success');
+            } else if (type === 'error') {
+                statusMessageDiv.classList.add('status-error');
+            } else if (type === 'warning') {
+                statusMessageDiv.classList.add('status-warning');
+            }
+            
+            statusMessageDiv.style.display = 'block';
+            
+            // Auto-hide success messages after 5 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusMessageDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // Function to check if the API is available
+        async function checkApiAvailability() {
+            try {
+                const response = await fetch(`${apiBaseUrl}/api/posts`, {
+                    method: 'HEAD',
+                    cache: 'no-store',
+                    mode: 'cors'
+                });
+                console.log('API is available:', response.status);
+            } catch (error) {
+                console.error('API is not available. Make sure the backend is running at:', apiBaseUrl);
+                showStatusMessage(`Cannot connect to the API at ${apiBaseUrl}. Please make sure the backend server is running.`, 'warning');
+            }
+        }
+
+        // Enhanced function to make API requests with better error handling
         async function fetchApiEndpoint(url, options = {}) {
-            const response = await fetch(url, options);
-            return response;
+            const fetchOptions = {
+                ...options,
+                mode: 'cors',
+                // Don't include credentials to avoid CORS preflight issues
+            };
+
+            try {
+                const response = await fetch(url, fetchOptions);
+                
+                if (!response.ok) {
+                    // For error responses, try to parse the error message
+                    const errorText = await response.text();
+                    throw new Error(`Server response: ${response.status} ${response.statusText} - ${errorText}`);
+                }
+                
+                return response;
+            } catch (error) {
+                console.error(`Fetch error for ${url}:`, error);
+                throw error;
+            }
         }
 
         form.addEventListener('submit', async (event) => {
             event.preventDefault(); // Prevent default browser form submission
 
             // Create FormData directly from the form element
-            // This will include all fields, including the file input
             const formData = new FormData(form);
-
-            // Log the FormData entries (for debugging)
-            console.log('Submitting FormData:');
-            for (let [key, value] of formData.entries()) {
-                console.log(`${key}:`, value);
+            
+            // Add the image file if selected (naming it 'imageFile' to match controller parameter)
+            const imageFile = imageUploadInput.files[0];
+            if (imageFile) {
+                formData.delete('imageUpload'); // Remove with old name if exists
+                formData.append('imageFile', imageFile); // Add with correct parameter name
             }
 
+            showStatusMessage('Submitting post...', 'warning');
+            
             try {
                 const response = await fetchApiEndpoint(`${apiBaseUrl}/api/posts`, {
                     method: 'POST',
                     body: formData // Send the FormData object directly
                 });
 
-                if (response.ok) {
-                    const createdPost = await response.json();
-                    console.log('Post created successfully:', createdPost);
-                    alert('Post submitted successfully!');
-                    form.reset(); // Clear the form
-                    aiStorySuggestionsDiv.innerHTML = initialStorySuggestionText; // Reset suggestions
-                    aiImageSuggestionsDiv.innerHTML = initialImageSuggestionText; // Reset suggestions
-                } else {
-                    const errorData = await response.text(); // Or response.json() if backend sends structured errors
-                    console.error('Failed to submit post:', response.status, errorData);
-                    alert(`Error submitting post: ${response.status} - ${errorData}`);
-                }
+                const createdPost = await response.json();
+                console.log('Post created successfully:', createdPost);
+                showStatusMessage('Post submitted successfully!', 'success');
+                
+                form.reset(); // Clear the form
+                aiStorySuggestionsDiv.innerHTML = initialStorySuggestionText; // Reset suggestions
+                aiImageSuggestionsDiv.innerHTML = initialImageSuggestionText; // Reset suggestions
             } catch (error) {
-                console.error('Network error or other issue:', error);
-                alert('An error occurred while submitting the post. Check the console.');
+                console.error('Error submitting post:', error);
+                showStatusMessage(`Error submitting post: ${error.message}`, 'error');
             }
         });
 
@@ -259,7 +348,7 @@
             debounceTimer = setTimeout(func, delay);
         }
 
-        // Function to fetch and display story suggestions
+        // Function to fetch and display story suggestions with enhanced error handling
         async function fetchStorySuggestion() {
             const currentText = storyTextArea.value;
             if (currentText.length < 20) {
@@ -278,17 +367,11 @@
                     body: JSON.stringify({ currentText: currentText })
                 });
 
-                if (response.ok) {
-                    const suggestion = await response.text(); // Expecting plain text suggestion
-                    aiStorySuggestionsDiv.innerHTML = `Suggestion: <i>${suggestion}</i>`;
-                    // TODO: Add button or mechanism to accept the suggestion
-                } else {
-                    console.error('Failed to get story suggestion:', response.status);
-                    aiStorySuggestionsDiv.innerHTML = '<i>Could not get suggestion.</i>';
-                }
+                const suggestion = await response.text(); 
+                aiStorySuggestionsDiv.innerHTML = `Suggestion: <i>${suggestion}</i>`;
             } catch (error) {
                 console.error('Error fetching story suggestion:', error);
-                aiStorySuggestionsDiv.innerHTML = '<i>Error getting suggestion.</i>';
+                aiStorySuggestionsDiv.innerHTML = `<i>Error getting suggestion: ${error.message}</i>`;
             }
         }
 
@@ -297,7 +380,7 @@
             debounce(fetchStorySuggestion, 1500); // Wait 1.5 seconds after user stops typing
         });
 
-        // Function to fetch and display image suggestions
+        // Function to fetch and display image suggestions with enhanced error handling
         async function fetchImageSuggestion() {
             const currentText = storyTextArea.value;
             if (currentText.length < 30) {
@@ -317,18 +400,12 @@
                     body: JSON.stringify({ currentText: currentText })
                 });
 
-                if (response.ok) {
-                    const imageUrl = await response.text(); // Expecting plain text URL
-                    // Display the image
-                    aiImageSuggestionsDiv.innerHTML = `<img src="${imageUrl}" alt="AI Suggested Image" style="max-width: 100%; max-height: 250px;">`;
-                    // TODO: Add mechanism to use this image (e.g., copy URL, download & select)
-                } else {
-                    console.error('Failed to get image suggestion:', response.status);
-                    aiImageSuggestionsDiv.innerHTML = '<i>Could not generate image suggestion.</i>';
-                }
+                const imageUrl = await response.text(); // Expecting plain text URL
+                // Display the image
+                aiImageSuggestionsDiv.innerHTML = `<img src="${imageUrl}" alt="AI Suggested Image" style="max-width: 100%; max-height: 250px;">`;
             } catch (error) {
                 console.error('Error fetching image suggestion:', error);
-                aiImageSuggestionsDiv.innerHTML = '<i>Error generating image suggestion.</i>';
+                aiImageSuggestionsDiv.innerHTML = `<i>Error generating image suggestion: ${error.message}</i>`;
             } finally {
                 suggestImageBtn.disabled = false; // Re-enable button
             }
@@ -336,9 +413,6 @@
 
         // Add event listener for the suggest image button
         suggestImageBtn.addEventListener('click', fetchImageSuggestion);
-
-        // TODO: Add logic to handle selection of suggested images or upload
-
     </script>
 
 </body>

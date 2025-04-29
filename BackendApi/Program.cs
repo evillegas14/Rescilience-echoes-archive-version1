@@ -13,15 +13,18 @@ var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
 // Add services to the container.
 
-// *** Add CORS services ***
+// *** Add CORS services with enhanced configuration ***
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: MyAllowSpecificOrigins,
                       policy =>
                       {
-                          policy.AllowAnyOrigin()
+                          policy.WithOrigins("http://localhost:5252",      // For dev API server
+                                            "http://localhost",            // For local file access
+                                            "file://")                     // For direct file access
                                 .AllowAnyHeader()
-                                .AllowAnyMethod();
+                                .AllowAnyMethod()
+                                .SetIsOriginAllowedToAllowWildcardSubdomains();
                       });
 });
 // *************************
@@ -80,7 +83,7 @@ else
     app.UseHttpsRedirection();
 }
 
-// *** Enable CORS ***
+// *** Enable CORS - Apply before other middleware ***
 app.UseCors(MyAllowSpecificOrigins);
 // *******************
 
@@ -99,9 +102,15 @@ if (app.Environment.IsDevelopment())
         RequestPath = "/LocalUploads"
     });
     
+    app.UseStaticFiles(); // Also serve regular static files
+    
     Console.WriteLine($"Serving local files from: {uploadPath}");
 }
 // *******************************************************
+
+// Authentication has been completely removed
+// Authorization middleware is not needed either since we removed [Authorize] attributes
+// app.UseAuthorization();
 
 app.MapControllers();
 
