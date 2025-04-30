@@ -1,77 +1,115 @@
 # Resilience Echoes Archive (Version 1)
 
-This project is a web application for creating and managing historical archive posts, featuring AI-powered suggestions for story content and images.
+This project is a web application designed for creating, managing, and exploring historical archive posts. It leverages AI to provide content suggestions and generate relevant images, enriching the archival experience.
 
 ## Features
 
-*   Create archive posts with title, date, timeline, story, and optional cited works.
-*   Upload images associated with posts.
-*   Get AI-driven story suggestions based on the current text.
-*   Get AI-generated image suggestions based on the story.
+*   **Post Management:** Create, view, update, and delete archive posts.
+*   **User Authentication:** Secure user login and registration (implementation details in `AuthService.cs`).
+*   **AI Content Assistance:** Utilizes Azure OpenAI to generate story suggestions and descriptive text for posts.
+*   **AI Image Generation:** Leverages Azure OpenAI (DALL-E) to create relevant images based on post content.
+*   **Flexible File Storage:** Supports both local file storage (for development) and Azure Blob Storage (for production) to handle image uploads.
+*   **Database:** Uses Entity Framework Core with SQL Server for data persistence.
+
+## Technology Stack
+
+*   **Backend:** ASP.NET Core 8
+*   **API:** RESTful Web API
+*   **Database:** Entity Framework Core 8, Microsoft SQL Server
+*   **AI Services:** Azure OpenAI (GPT models for text, DALL-E for images)
+*   **Cloud Storage:** Azure Blob Storage
+*   **Authentication:** Custom implementation (see `AuthService.cs`)
+*   **Language:** C#
 
 ## Prerequisites
 
-*   .NET 8 SDK (or later)
-*   Node.js and npm (if you plan to enhance the frontend)
-*   For production: Azure Account (for Azure Blob Storage, Azure OpenAI, and SQL Database)
+*   [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) or later
+*   [SQL Server](https://www.microsoft.com/en-us/sql-server/sql-server-downloads) (for local development, e.g., Express or Developer edition)
+*   An Azure Subscription (for production deployment and Azure services)
+    *   Azure OpenAI Service resource
+    *   Azure Blob Storage account
+*   Git
+
+## Configuration
+
+Application settings are managed in `BackendApi/appsettings.json` and environment-specific overrides like `BackendApi/appsettings.Development.json`.
+
+Key configuration values needed:
+
+*   **`ConnectionStrings:DefaultConnection`**: Your SQL Server connection string.
+*   **`Azure:OpenAiEndpoint`**: The endpoint URL for your Azure OpenAI resource.
+*   **`Azure:OpenAiKey`**: The API key for your Azure OpenAI resource.
+*   **`Azure:OpenAiDeploymentName`**: The deployment name for your text generation model (e.g., gpt-35-turbo, gpt-4).
+*   **`Azure:OpenAiImageDeploymentName`**: The deployment name for your image generation model (e.g., dall-e-3).
+*   **`Azure:StorageConnectionString`**: The connection string for your Azure Blob Storage account.
+*   **`Azure:StorageContainerName`**: The name of the blob container to store uploads.
+*   **`Jwt:Key`**: A secret key for signing JWT tokens.
+*   **`Jwt:Issuer`**: The issuer name for JWT tokens.
+*   **`Jwt:Audience`**: The audience name for JWT tokens.
+
+**Note:** Use User Secrets or environment variables for sensitive data like API keys and connection strings in production.
 
 ## Local Development Setup
-
-The application now supports a local development mode that doesn't require Azure services:
 
 1.  **Clone the repository:**
     ```bash
     git clone <repository-url>
     cd Rescilience-echoes-archive-version1
     ```
-
-2.  **Run the Backend API in Development mode:**
-    *   From the `BackendApi` directory, run: `dotnet run`
-    *   The API will be available at `http://localhost:5252`
-    *   In development mode:
-        * The application uses an in-memory database instead of SQL Server
-        * Images are stored locally in a `LocalUploads` folder instead of Azure Blob Storage
-        * A mock OpenAI service provides simulated AI responses instead of Azure OpenAI
-
-3.  **Run the Frontend:**
-    *   Simply open the `index.html` file in your web browser.
+2.  **Configure `appsettings.Development.json`:**
+    *   Set the `ConnectionStrings:DefaultConnection` to your local SQL Server instance.
+    *   Optionally, configure Azure service settings if you want to test with live Azure resources, or rely on the mock services (`MockOpenAiService`, `LocalFileStorageService`) if configured in `Program.cs` for development.
+    *   Set JWT configuration values.
+3.  **Apply Database Migrations:**
+    *   Navigate to the backend project: `cd BackendApi`
+    *   Run the EF Core migration command: `dotnet ef database update`
+4.  **Run the Application:**
+    *   Still in the `BackendApi` directory, run: `dotnet run`
+5.  **Access the API:**
+    *   The API will likely be running on `https://localhost:xxxx` or `http://localhost:yyyy` (check the console output).
+    *   If Swagger is enabled (check `Program.cs`), you can access the Swagger UI at `/swagger`.
 
 ## Production Setup
 
-For a production deployment, you'll need to configure Azure services:
+1.  **Prerequisites:** Ensure you have an Azure SQL Database, Azure OpenAI service, and Azure Blob Storage account configured.
+2.  **Configure `appsettings.json`:** Update the settings with your production Azure resource details and connection strings. **Crucially, manage sensitive keys and connection strings securely using Azure Key Vault or environment variables, not directly in `appsettings.json`.**
+3.  **Publish the Application:**
+    *   Publish the `BackendApi` project:
+        ```bash
+        cd BackendApi
+        dotnet publish -c Release -o ./publish
+        ```
+    *   Deploy the contents of the `publish` folder to your chosen hosting environment (e.g., Azure App Service, Azure Kubernetes Service).
+4.  **Apply Database Migrations:** Ensure migrations are applied to your production Azure SQL Database. This might be part of your CI/CD pipeline or done manually via connection tools.
+5.  **Configure Hosting Environment:** Set up necessary environment variables (e.g., `ASPNETCORE_ENVIRONMENT=Production`, connection strings, API keys).
 
-1.  **Configure Backend API (`BackendApi/appsettings.json`):**
-    *   **ConnectionStrings**: Update `DefaultConnection` with your database connection string.
-    *   **BlobStorage**: Provide your Azure Blob Storage `AccountName` and `ContainerName`.
-    *   **AzureOpenAI**: Set your Azure OpenAI `Endpoint`, `DeploymentName` (for text generation, e.g., gpt-4o-mini), and `DalleDeploymentName` (for image generation, e.g., dall-e-3).
+## API Overview
 
-2.  **Database Migrations:**
-    *   Open a terminal in the root directory.
-    *   Navigate to the BackendApi project: `cd BackendApi`
-    *   Apply migrations: `dotnet ef database update`
+The backend exposes a RESTful API. Key controllers include:
 
-## Usage
+*   **`PostsController`**: Handles CRUD operations for archive posts, including AI interactions and file uploads.
+*   **(Potential) `AuthController`**: Handles user registration and login (or this logic might be within another controller or service).
 
-1.  Fill out the form fields (Title, Date, Story are required).
-2.  As you type in the "Story" text area (after ~20 characters), AI suggestions will appear below it.
-3.  Once you have sufficient story text, click "Suggest Image Based on Story" to get an AI-generated image preview.
-4.  Optionally, upload your own image using the file input.
-5.  Add any citations in the "Work Cited" field.
-6.  Click "Submit Post".
+Refer to the controller code (`BackendApi/Controllers/`) or the Swagger UI (if enabled) for detailed endpoint information.
 
 ## Project Structure
 
-*   `index.html`: Main frontend page for creating posts.
+*   `index.html` / `login.html`: Basic frontend examples (potentially outdated or for testing).
+*   `Rescilience-echoes-archive-version1.sln`: Visual Studio Solution file.
 *   `BackendApi/`: Contains the ASP.NET Core backend project.
-    *   `Controllers/`: API endpoints (Posts).
-    *   `Data/`: Database context (`ApplicationDbContext`).
+    *   `Controllers/`: API endpoints (e.g., `PostsController.cs`).
+    *   `Data/`: Database context (`ApplicationDbContext.cs`).
     *   `Migrations/`: Entity Framework Core database migrations.
-    *   `Models/`: Data models (Post).
+    *   `Models/`: Data models (e.g., `Post.cs`, `User.cs`, `CreatePostDto.cs`).
     *   `Services/`: Business logic services:
+        *   `AuthService.cs`: Handles authentication logic.
         *   `BlobStorageService.cs`: Azure Blob Storage implementation.
-        *   `LocalFileStorageService.cs`: Local file storage implementation for development.
+        *   `LocalFileStorageService.cs`: Local file storage implementation.
         *   `OpenAiService.cs`: Azure OpenAI service implementation.
-        *   `MockOpenAiService.cs`: Mock AI service for development.
-    *   `Program.cs`: Application startup and configuration.
-    *   `appsettings.json`: Configuration file.
+        *   `MockOpenAiService.cs`: Mock AI service for development/testing.
+    *   `Properties/launchSettings.json`: Visual Studio debug launch profiles.
+    *   `Program.cs`: Application startup, service registration, and middleware configuration.
+    *   `appsettings.json`: Main configuration file.
+    *   `appsettings.Development.json`: Development-specific configuration overrides.
+    *   `BackendApi.csproj`: Project file defining dependencies and build settings.
 

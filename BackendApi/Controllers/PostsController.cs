@@ -1,77 +1,105 @@
 using BackendApi.Data;
 using BackendApi.Models;
-using BackendApi.Services; // Added
+using BackendApi.Services; 
+using Microsoft.AspNetCore.Authorization; 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http; // Added for IFormFile
-using System; // Added for Guid
-using System.IO; // Added for Path
+using Microsoft.AspNetCore.Http; 
+using System;
+using System.IO; 
+using System.Globalization; 
 
 namespace BackendApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize] 
     public class PostsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
-        private readonly BlobStorageService _blobStorageService; // Added
-        private readonly OpenAiService _openAiService; // Added
+        private readonly BlobStorageService _blobStorageService; 
+        private readonly OpenAiService _openAiService; 
 
-        // Inject all services
         public PostsController(ApplicationDbContext context, BlobStorageService blobStorageService, OpenAiService openAiService)
         {
             _context = context;
-            _blobStorageService = blobStorageService; // Added
-            _openAiService = openAiService; // Added
+            _blobStorageService = blobStorageService; 
+            _openAiService = openAiService; 
+        }
+
+        // GET: api/posts
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Post>>> GetPosts()
+        {
+            return await _context.Posts.OrderByDescending(p => p.CreatedAt).ToListAsync();
+        }
+
+        // GET: api/posts/{id}
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Post>> GetPost(int id)
+        {
+            var post = await _context.Posts.FindAsync(id);
+
+            if (post == null)
+            {
+                return NotFound();
+            }
+
+            return post;
         }
 
         // POST: api/posts
-        // Handles the submission of a new post with an optional image
         [HttpPost]
-        // Use [FromForm] to accept multipart/form-data
-        public async Task<ActionResult<Post>> CreatePost([FromForm] Post post, IFormFile? imageFile)
+        public async Task<ActionResult<Post>> CreatePost([FromForm] CreatePostDto dto, IFormFile? imageFile)
         {
+            // --- Manual Date Parsing Removed ---
+            // Rely on model binding to parse dto.DatePublished
+
             if (!ModelState.IsValid)
             {
+                // If model binding failed for DatePublished or other fields, return BadRequest
                 return BadRequest(ModelState);
             }
+
+            // Create the Post entity and map from DTO
+            var post = new Post
+            {
+                Title = dto.Title,
+                // Directly use the DateTime parsed by the model binder
+                DatePublished = dto.DatePublished.ToUniversalTime(), // Store as UTC
+                Timeline = dto.Timeline,
+                Story = dto.Story,
+                WorkCited = dto.WorkCited,
+                CreatedAt = DateTime.UtcNow // Set creation time server-side
+            };
 
             // Handle image upload if a file is provided
             if (imageFile != null && imageFile.Length > 0)
             {
                 try
                 {
-                    // Generate a unique file name to prevent collisions
                     var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(imageFile.FileName);
-
-                    // Upload the file using the BlobStorageService
                     using var stream = imageFile.OpenReadStream();
                     var imageUrl = await _blobStorageService.UploadFileAsync(stream, uniqueFileName, imageFile.ContentType);
-
-                    // Set the ImageURL property on the post object
                     post.ImageURL = imageUrl;
                 }
                 catch (Exception ex)
                 {
-                    // Log the exception (using a proper logging framework is recommended)
                     Console.WriteLine($"Error uploading image: {ex.Message}");
-                    // Return an error response to the client
                     return StatusCode(StatusCodes.Status500InternalServerError, "Error uploading image.");
                 }
             }
             else
             {
-                post.ImageURL = null; // Ensure ImageURL is null if no file is uploaded
+                post.ImageURL = null; 
             }
-
-            // Set the CreatedAt timestamp before saving
-            post.CreatedAt = DateTime.UtcNow;
 
             _context.Posts.Add(post);
             await _context.SaveChangesAsync();
 
-            return Ok(post);
+            // Return 201 Created with the location of the new resource
+            return CreatedAtAction(nameof(GetPost), new { id = post.PostId }, post);
         }
 
         // POST: api/posts/suggest-story
@@ -102,10 +130,7 @@ namespace BackendApi.Controllers
                 return BadRequest("Story text is required to generate image suggestions.");
             }
 
-            // Create a prompt for DALL-E based on the story text
-            // You might want to refine this prompt for better results
             var imagePrompt = $"Generate an image depicting the following historical scene: {request.CurrentText}";
-
             var imageUrl = await _openAiService.GenerateImageAsync(imagePrompt);
 
             if (imageUrl == null)
@@ -113,20 +138,10 @@ namespace BackendApi.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, "Failed to generate image suggestion from AI service.");
             }
 
-            // Return the URL of the generated image
             return Ok(imageUrl.ToString());
         }
-
-        // TODO: Add endpoints for:
-        // - GET /api/posts/{id} (to retrieve a specific post - needed for CreatedAtAction)
-        // - GET /api/posts (to retrieve all posts)
-        // - PUT /api/posts/{id} (to update a post)
-        // - DELETE /api/posts/{id} (to delete a post)
-        // - POST /api/posts/suggest-image (for AI image suggestions)
-        // - POST /api/posts/upload-image (for handling image uploads)
     }
 
-    // Simple DTO (Data Transfer Object) for the suggestion request body
     public class SuggestionRequest
     {
         public string CurrentText { get; set; } = string.Empty;

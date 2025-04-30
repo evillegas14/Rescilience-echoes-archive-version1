@@ -10,8 +10,8 @@ namespace BackendApi.Services
 {
     public class BlobStorageService
     {
-        private readonly BlobServiceClient? _blobServiceClient;
-        private readonly string? _containerName;
+        private readonly BlobServiceClient? _blobServiceClient; // Made nullable
+        private readonly string? _containerName; // Made nullable
 
         public BlobStorageService(IConfiguration configuration)
         {
@@ -19,19 +19,21 @@ namespace BackendApi.Services
             if (configuration["BlobStorage:AccountName"] != null)
             {
                 var accountName = configuration["BlobStorage:AccountName"];
-                _containerName = configuration["BlobStorage:ContainerName"] ?? throw new InvalidOperationException("BlobStorage:ContainerName not configured.");
+                // Use null-conditional operator ?. and null-coalescing operator ??
+                _containerName = configuration["BlobStorage:ContainerName"]; 
 
-                if (string.IsNullOrEmpty(accountName))
+                if (string.IsNullOrEmpty(accountName) || string.IsNullOrEmpty(_containerName))
                 {
-                    throw new InvalidOperationException("BlobStorage:AccountName not configured.");
+                    Console.WriteLine("Warning: BlobStorage AccountName or ContainerName is not configured. Blob Storage operations will fail.");
+                    _blobServiceClient = null; // Ensure it's null if config is missing
+                    _containerName = null;
+                    return; // Exit constructor early if config is invalid
                 }
-
-                // Construct the Blob service endpoint URL
-                var blobServiceUri = new Uri($"https://{accountName}.blob.core.windows.net");
 
                 try
                 {
                     // Use DefaultAzureCredential for passwordless authentication
+                    var blobServiceUri = new Uri($"https://{accountName}.blob.core.windows.net");
                     _blobServiceClient = new BlobServiceClient(blobServiceUri, new DefaultAzureCredential());
                 }
                 catch (Exception ex)
@@ -39,21 +41,24 @@ namespace BackendApi.Services
                     // Log the exception but allow the service to initialize
                     // This allows the application to start even without Azure credentials
                     Console.WriteLine($"Warning: Failed to initialize Azure Blob Storage: {ex.Message}");
-                    // The service will throw exceptions when methods are called if not in a derived class
+                    _blobServiceClient = null; // Ensure it's null on exception
+                    _containerName = null; // Ensure container name is also null if client fails
                 }
+            }
+            else
+            {
+                Console.WriteLine("Warning: BlobStorage:AccountName not found in configuration. Blob Storage operations will fail.");
+                _blobServiceClient = null; // Explicitly set to null if AccountName is missing
+                _containerName = null;
             }
         }
 
         public virtual async Task<string> UploadFileAsync(Stream fileStream, string fileName, string contentType)
         {
-            if (_blobServiceClient == null)
+            // Add null checks for client and container name
+            if (_blobServiceClient == null || string.IsNullOrEmpty(_containerName))
             {
-                throw new InvalidOperationException("BlobServiceClient is not initialized. Cannot upload file to Azure.");
-            }
-
-            if (_containerName == null)
-            {
-                throw new InvalidOperationException("ContainerName is not initialized.");
+                throw new InvalidOperationException("BlobServiceClient or ContainerName is not initialized. Check configuration and logs.");
             }
 
             var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);

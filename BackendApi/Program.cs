@@ -1,9 +1,14 @@
 using BackendApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Builder;
-using BackendApi.Services;
+using BackendApi.Services; // Added for AuthService, BlobStorageService, etc.
+using Microsoft.AspNetCore.Authentication.JwtBearer; // Added for JwtBearer
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using Microsoft.Extensions.DependencyInjection;
+using System.Threading.Tasks;
 using Microsoft.Extensions.FileProviders;
+using BackendApi.Models; // Added for potential User model usage in AuthService
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,18 +18,15 @@ var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
 // Add services to the container.
 
-// *** Add CORS services with enhanced configuration ***
+// *** Add CORS services ***
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: MyAllowSpecificOrigins,
                       policy =>
                       {
-                          policy.WithOrigins("http://localhost:5252",      // For dev API server
-                                            "http://localhost",            // For local file access
-                                            "file://")                     // For direct file access
+                          policy.AllowAnyOrigin()
                                 .AllowAnyHeader()
-                                .AllowAnyMethod()
-                                .SetIsOriginAllowedToAllowWildcardSubdomains();
+                                .AllowAnyMethod();
                       });
 });
 // *************************
@@ -66,11 +68,62 @@ else
     builder.Services.AddSingleton<BlobStorageService>();
     builder.Services.AddSingleton<OpenAiService>();
 }
+
+// Always register AuthService as Scoped
+builder.Services.AddScoped<AuthService>();
 // ***********************************
+
+// *** Configure JWT Authentication ***
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var key = Encoding.ASCII.GetBytes(jwtSettings["Key"] ?? "DEVELOPMENT_TEMPORARY_KEY_ONLY_FOR_LOCAL_USE");
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ValidateIssuer = !builder.Environment.IsDevelopment(),
+        ValidIssuer = jwtSettings["Issuer"] ?? "http://localhost",
+        ValidateAudience = !builder.Environment.IsDevelopment(),
+        ValidAudience = jwtSettings["Audience"] ?? "http://localhost",
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
+// *********************************
+
+// *** Add Authorization Services ***
+builder.Services.AddAuthorization();
+// ********************************
 
 builder.Services.AddControllers();
 
 var app = builder.Build();
+
+// *** Initialize Default User ***
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var authService = services.GetRequiredService<AuthService>();
+        await authService.InitializeDefaultUserAsync();
+        Console.WriteLine("Default user initialization checked/completed.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"An error occurred during default user initialization: {ex.Message}");
+    }
+}
+// ******************************
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -83,7 +136,7 @@ else
     app.UseHttpsRedirection();
 }
 
-// *** Enable CORS - Apply before other middleware ***
+// *** Enable CORS ***
 app.UseCors(MyAllowSpecificOrigins);
 // *******************
 
@@ -102,15 +155,14 @@ if (app.Environment.IsDevelopment())
         RequestPath = "/LocalUploads"
     });
     
-    app.UseStaticFiles(); // Also serve regular static files
-    
     Console.WriteLine($"Serving local files from: {uploadPath}");
 }
 // *******************************************************
 
-// Authentication has been completely removed
-// Authorization middleware is not needed either since we removed [Authorize] attributes
-// app.UseAuthorization();
+// *** Enable Authentication and Authorization ***
+app.UseAuthentication();
+app.UseAuthorization();
+// *********************************************
 
 app.MapControllers();
 

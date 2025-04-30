@@ -25,25 +25,15 @@ jobs:
 
       - name: Build with dotnet
         run: dotnet build --configuration Release
-        working-directory: ./BackendApi
 
       - name: dotnet publish
-        run: dotnet publish -c Release -o "../publish/app"
-        working-directory: ./BackendApi
+        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
 
-      # Copy frontend files to the publish directory
-      - name: Copy frontend files
-        run: |
-          if (!(Test-Path publish/app/wwwroot)) {
-            New-Item -ItemType Directory -Path publish/app/wwwroot -Force
-          }
-          Copy-Item -Path index.html -Destination publish/app/wwwroot/
-          
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: publish/app
+          path: ${{env.DOTNET_ROOT}}/myapp
 
   deploy:
     runs-on: windows-latest
@@ -64,9 +54,9 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_EB138C8ED8974AB09CF8B04CE97980EC }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_D900FFECD71C466287EE3F3BBBCC6BCE }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_29820A023E094B28963218C21AB58C50 }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
@@ -75,3 +65,4 @@ jobs:
           app-name: 'resilience-echoes-archive'
           slot-name: 'Production'
           package: .
+          
